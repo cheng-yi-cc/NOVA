@@ -1,0 +1,52 @@
+/* 导入Tailwind CSS的基础样式 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 定义全局CSS变量 */
+@layer base {
+  :root {
+    /* 基础颜色 */
+    --background: 228 29% 7%;      /* 深色背景 */
+    --foreground: 210 40% 98%;     /* 浅色前景 */
+
+    /* 卡片样式 */
+    --card: 228 9% 11%;           /* 卡片背景色 */
+    --card-foreground: 210 40% 98%; /* 卡片文字颜色 */
+
+    /* 弹出层样式 */
+    --popover: 228 9% 11%;         /* 弹出层背景色 */
+    --popover-foreground: 210 40% 98%; /* 弹出层文字颜色 */
+
+    /* 主要颜色 */
+    --primary: 196 100% 77%;       /* 主要强调色 */
+    --primary-foreground: 222 47% 11%; /* 主要文字颜色 */
+
+    /* 次要颜色 */
+    --secondary: 217 33% 37%;      /* 次要强调色 */
+    --secondary-foreground: 210 40% 98%; /* 次要文字颜色 */
+
+    /* 静音颜色 */
+    --muted: 217 33% 17%;          /* 静音背景色 */
+    --muted-foreground: 215 20.2% 65.1%; /* 静音文字颜色 */
+
+    /* 强调颜色 */
+    --accent: 217 33% 17%;         /* 强调背景色 */
+    --accent-foreground: 210 40% 98%; /* 强调文字颜色 */
+
+    /* 危险颜色 */
+    --destructive: 0 62.8% 30.6%;   /* 危险操作背景色 */
+    --destructive-foreground: 210 40% 98%; /* 危险操作文字颜色 */
+
+    /* 其他UI元素颜色 */
+    --border: 217 33% 17%;         /* 边框颜色 */
+    --input: 217 33% 17%;          /* 输入框颜色 */
+    --ring: 224 71.4% 4.1%;        /* 焦点环颜色 */
+  }
+}
+
+/* 页面背景渐变 */
+body {
+  background: radial-gradient(circle at center, #1b2a4b 0%, #0d0f1a 100%);
+}
+
