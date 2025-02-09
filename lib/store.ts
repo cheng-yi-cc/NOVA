@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+type Theme = 'light' | 'dark' | 'system'
+
 interface HistoryItem {
   id: string
   title: string
@@ -17,9 +19,11 @@ interface HistoryItem {
 interface SettingsState {
   apiKey: string
   selectedModel: string
+  theme: Theme
   chatHistory: Record<string, HistoryItem[]>
   setApiKey: (key: string) => void
   setSelectedModel: (model: string) => void
+  setTheme: (theme: Theme) => void
   addChatHistory: (chat: HistoryItem) => void
   removeChatHistory: (id: string) => void
   clearChatHistory: () => void
@@ -29,7 +33,8 @@ export const useSettingsStore = create<SettingsState>()(
   persist<SettingsState>(
     (set) => ({
       apiKey: '',
-      selectedModel: '',
+      selectedModel: 'Qwen/Qwen2.5-7B-Instruct',
+      theme: 'system',
       chatHistory: {
         "今天": [],
         "本周": [],
@@ -37,6 +42,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
       setApiKey: (key: string) => set({ apiKey: key }),
       setSelectedModel: (model: string) => set({ selectedModel: model }),
+      setTheme: (theme: Theme) => set({ theme }),
       addChatHistory: (chat: HistoryItem) => set((state) => {
         const today = new Date()
         const chatDate = new Date(chat.date)
@@ -82,10 +88,24 @@ export const useSettingsStore = create<SettingsState>()(
       clearChatHistory: () => set({ chatHistory: { "今天": [], "本周": [], "更早": [] } })
     }),
     {
-      name: 'settings-storage',
+      name: 'nova-settings',
     }
   )
 )
+
+export const useTheme = () => {
+  const theme = useSettingsStore((state) => state.theme)
+  const setTheme = useSettingsStore((state) => state.setTheme)
+  const systemTheme = typeof window !== 'undefined' 
+    ? window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+    : 'dark'
+
+  return {
+    theme: theme === 'system' ? systemTheme : theme,
+    setTheme,
+    currentTheme: theme
+  }
+}
 
 // 辅助函数：判断是否是同一天
 function isSameDay(date1: Date, date2: Date): boolean {

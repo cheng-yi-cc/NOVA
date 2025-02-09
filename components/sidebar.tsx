@@ -3,7 +3,13 @@
 import { Plus, Layout, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useCallback } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogDescription 
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -130,6 +136,9 @@ export function Sidebar({ onChatToggle }: SidebarProps) {
         <DialogContent className="sm:max-w-[425px] bg-background/95 backdrop-blur-xl border-white/20">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-foreground">SiliconFlow 设置</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              配置您的 API Key 和模型选项
+            </DialogDescription>
           </DialogHeader>
           <form className="grid gap-6 py-4" onSubmit={(e) => e.preventDefault()}>
             <div className="grid gap-2">

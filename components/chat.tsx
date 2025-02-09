@@ -6,12 +6,22 @@ import { ChatMessages } from "./chat-messages"
 import { sendMessage } from "@/lib/api"
 import { nanoid } from "nanoid"
 import { useSettingsStore } from "@/lib/store"
+import { toast } from "sonner"
 
 interface Message {
   id: string
   content: string
   role: 'user' | 'assistant'
   timestamp: Date
+  files?: { 
+    name: string
+    type: string
+    size: number
+    data: ArrayBuffer
+    uploadProgress?: number
+  }[]
+  isStreaming?: boolean
+  streamedContent?: string
 }
 
 interface ChatProps {
@@ -38,10 +48,11 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
   const { addChatHistory } = useSettingsStore()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const userScrolledRef = useRef(false)
-  const lastMessageRef = useRef<string>("")
+  const streamTimeoutRef = useRef<NodeJS.Timeout>()
+  const typingSpeedRef = useRef(30) // 打字速度（毫秒/字符）
 
   // 保存对话记录
-  const saveChatHistory = (messages: Message[]) => {
+  const saveChatHistory = useCallback((messages: Message[]) => {
     if (messages.length < 2) return // 至少需要一问一答
 
     // 获取对话的第一条用户消息作为标题
@@ -57,21 +68,28 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
       title: firstUserMessage.content.slice(0, 30) + (firstUserMessage.content.length > 30 ? '...' : ''),
       date: new Date().toISOString(),
       summary: lastAssistantMessage.content.slice(0, 50) + (lastAssistantMessage.content.length > 50 ? '...' : ''),
-      messages: messages
+      messages: messages.map(msg => ({
+        ...msg,
+        isStreaming: undefined,
+        streamedContent: undefined
+      }))
     }
 
-    addChatHistory(chatRecord)
-  }
+    // 使用 setTimeout 将状态更新移到下一个事件循环
+    setTimeout(() => {
+      addChatHistory(chatRecord)
+    }, 0)
+  }, [addChatHistory])
 
   // 智能滚动处理
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     if (userScrolledRef.current) return
     
     messagesEndRef.current?.scrollIntoView({ 
       behavior: 'smooth',
       block: 'end'
     })
-  }
+  }, [])
 
   // 监听滚动事件
   useEffect(() => {
@@ -91,23 +109,84 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
   // 消息变化时滚动
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, scrollToBottom])
 
-  const handleSendMessage = async (content: string) => {
+  // 清理打字机效果的定时器
+  useEffect(() => {
+    return () => {
+      if (streamTimeoutRef.current) {
+        clearTimeout(streamTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // 打字机效果处理函数
+  const updateStreamedContent = useCallback((messageId: string, content: string) => {
+    setMessages(prev => {
+      const updated = [...prev]
+      const targetMessage = updated.find(m => m.id === messageId)
+      if (targetMessage) {
+        // 如果内容长度差异较大，加快打字速度
+        const contentLengthDiff = content.length - (targetMessage.streamedContent?.length || 0)
+        if (contentLengthDiff > 50) {
+          typingSpeedRef.current = 10
+        } else if (contentLengthDiff > 20) {
+          typingSpeedRef.current = 20
+        } else {
+          typingSpeedRef.current = 30
+        }
+
+        // 计算下一个要显示的字符
+        const currentLength = targetMessage.streamedContent?.length || 0
+        const nextChar = content.charAt(currentLength)
+        
+        if (nextChar) {
+          targetMessage.streamedContent = (targetMessage.streamedContent || '') + nextChar
+          targetMessage.content = content
+
+          // 设置下一个字符的定时器
+          if (currentLength < content.length - 1) {
+            streamTimeoutRef.current = setTimeout(() => {
+              updateStreamedContent(messageId, content)
+            }, typingSpeedRef.current)
+          } else {
+            // 流式传输完成
+            targetMessage.isStreaming = false
+          }
+        }
+      }
+      return updated
+    })
+  }, [])
+
+  const handleSendMessage = useCallback(async (content: string, files?: File[]) => {
     try {
+      const { apiKey } = useSettingsStore.getState()
+      if (!apiKey) {
+        toast.error("请先在设置中配置 API Key")
+        return
+      }
+
       setIsLoading(true)
       userScrolledRef.current = false
       
       // 添加用户消息
+      const userMessageId = nanoid()
       const userMessage: Message = {
-        id: nanoid(),
-        content,
+        id: userMessageId,
+        content: content || "已上传文件",
         role: 'user',
-        timestamp: new Date()
+        timestamp: new Date(),
+        files: files ? await Promise.all(files.map(async (file) => ({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          data: await file.arrayBuffer(),
+          uploadProgress: 0
+        }))) : undefined
       }
       
-      const updatedMessages = [...messages, userMessage]
-      setMessages(updatedMessages)
+      setMessages(prev => [...prev, userMessage])
 
       // 创建一个临时的AI消息
       const assistantMessageId = nanoid()
@@ -115,41 +194,73 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
         id: assistantMessageId,
         content: '',
         role: 'assistant',
-        timestamp: new Date()
+        timestamp: new Date(),
+        isStreaming: true,
+        streamedContent: ''
       }
       
-      setMessages([...updatedMessages, assistantMessage])
+      setMessages(prev => [...prev, assistantMessage])
 
       // 流式接收响应
-      const response = await sendMessage(content, (chunk) => {
-        setMessages(prev => {
-          const updated = [...prev]
-          const lastMessage = updated.find(m => m.id === assistantMessageId)
-          if (lastMessage) {
-            lastMessage.content = chunk
-          }
-          return updated
-        })
-      })
+      const response = await sendMessage(
+        content, 
+        (chunk) => {
+          // 使用打字机效果更新内容
+          updateStreamedContent(assistantMessageId, chunk)
+        }, 
+        files,
+        ({ fileName, progress }) => {
+          // 更新文件上传进度
+          setMessages(prev => {
+            const updated = [...prev]
+            const userMsg = updated.find(m => m.id === userMessageId)
+            if (userMsg && userMsg.files) {
+              const file = userMsg.files.find(f => f.name === fileName)
+              if (file) {
+                file.uploadProgress = progress
+              }
+            }
+            return updated
+          })
+        }
+      )
       
       // 保存最终消息
-      const finalMessages = updatedMessages.concat({
-        id: assistantMessageId,
-        content: response,
-        role: 'assistant',
-        timestamp: new Date()
+      setMessages(prev => {
+        const updated = prev.map(msg => {
+          if (msg.id === assistantMessageId) {
+            return {
+              ...msg,
+              content: response,
+              isStreaming: false,
+              streamedContent: response
+            }
+          }
+          if (msg.id === userMessageId && msg.files) {
+            return {
+              ...msg,
+              files: msg.files.map(file => ({
+                ...file,
+                uploadProgress: 100
+              }))
+            }
+          }
+          return msg
+        })
+        saveChatHistory(updated)
+        return updated
       })
-      
-      setMessages(finalMessages)
-      saveChatHistory(finalMessages)
     } catch (error) {
       console.error('Failed to send message:', error)
-      // 可以添加错误提示
+      toast.error(error instanceof Error ? error.message : "发送消息失败，请检查网络连接和API配置")
+      
+      // 移除失败的助手消息
+      setMessages(prev => prev.filter(msg => msg.role !== 'assistant' || !msg.isStreaming))
     } finally {
       setIsLoading(false)
       userScrolledRef.current = false
     }
-  }
+  }, [updateStreamedContent, saveChatHistory])
 
   // 处理初始消息
   useEffect(() => {
@@ -157,7 +268,7 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
       initialMessageProcessed.current = true
       handleSendMessage(initialMessage)
     }
-  }, [initialMessage])
+  }, [initialMessage, handleSendMessage])
 
   // 处理加载历史对话
   const handleLoadHistory = useCallback((event: CustomEvent<{messages: Message[], id: string}>) => {
