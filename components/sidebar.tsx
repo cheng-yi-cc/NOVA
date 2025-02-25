@@ -29,7 +29,8 @@ export function Sidebar({ onChatToggle }: SidebarProps) {
     "Qwen/Qwen2.5-7B-Instruct",
     "Qwen/Qwen2.5-14B-Instruct",
     "Qwen/Qwen2.5-72B-Instruct",
-    "Qwen/Qwen2.5-Coder-32B-Instruct"
+    "Qwen/Qwen2.5-Coder-32B-Instruct",
+    "Pro/Qwen/Qwen2-VL-7B-Instruct",
   ]
 
   const handleSaveSettings = () => {

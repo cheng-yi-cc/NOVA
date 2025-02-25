@@ -59,7 +59,11 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
       "Qwen/Qwen2.5-Coder-32B-Instruct": {
         accept: ".txt,.pdf,image/*,.doc,.docx,.json,.yaml,.py,.js,.ts,.jsx,.tsx",
         description: "编程专用模型，支持多种代码和配置文件"
-      }
+      },
+      "Pro/Qwen/Qwen2-VL-7B-Instruct": {
+        accept: ".txt,.pdf,image/*,.doc,.docx,.ppt,.pptx,.json,.yaml,.py,.js,.ts,.jsx,.tsx",
+        description: "视觉模型，支持处理图片"
+      },
     }
 
     const handleSend = async () => {
