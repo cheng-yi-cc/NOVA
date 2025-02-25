@@ -45,23 +45,23 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
 
     const modelInfo: Record<string, ModelInfo> = {
       "Qwen/Qwen2.5-7B-Instruct": {
-        accept: ".txt,.pdf,image/*",
-        description: "基础模型，支持文本、PDF和图片处理"
+        accept: ".txt",
+        description: "大语言模型 7B"
       },
       "Qwen/Qwen2.5-14B-Instruct": {
-        accept: ".txt,.pdf,image/*,.doc,.docx",
-        description: "进阶模型，额外支持Word文档处理"
+        accept: ".txt",
+        description: "大语言模型 14B"
       },
       "Qwen/Qwen2.5-72B-Instruct": {
-        accept: ".txt,.pdf,image/*,.doc,.docx,.ppt,.pptx",
-        description: "高级模型，额外支持PPT文件处理"
+        accept: ".txt",
+        description: "大语言模型 72B"
       },
       "Qwen/Qwen2.5-Coder-32B-Instruct": {
-        accept: ".txt,.pdf,image/*,.doc,.docx,.json,.yaml,.py,.js,.ts,.jsx,.tsx",
-        description: "编程专用模型，支持多种代码和配置文件"
+        accept: ".txt",
+        description: "代码模型"
       },
       "Pro/Qwen/Qwen2-VL-7B-Instruct": {
-        accept: ".txt,.pdf,image/*,.doc,.docx,.ppt,.pptx,.json,.yaml,.py,.js,.ts,.jsx,.tsx",
+        accept: ".txt,image/*",
         description: "视觉模型，支持处理图片"
       },
     }
@@ -225,7 +225,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           ref={fileInputRef}
           className="hidden"
           multiple
-          accept={modelInfo[selectedModel]?.accept || ".txt,.pdf,image/*"}
+          accept={modelInfo[selectedModel]?.accept || ".txt,image/*"}
           onChange={handleFileChange}
         />
 
@@ -239,7 +239,8 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
               <div className="grid gap-2">
                 <Select value={selectedModel} onValueChange={handleModelChange}>
                   <SelectTrigger className="bg-white/5 border-white/10 text-foreground">
-                    <SelectValue placeholder="选择一个模型" />
+                    {/* <SelectValue placeholder="选择一个模型" /> */}
+                    {selectedModel && <span className="font-medium">{selectedModel.split('/').at(-1)}</span>}
                   </SelectTrigger>
                   <SelectContent className="bg-background/95 backdrop-blur-xl border-white/20">
                     {Object.entries(modelInfo).map(([model, info]) => (
@@ -249,7 +250,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                         className="text-foreground hover:bg-white/10"
                       >
                         <div className="flex flex-col gap-1">
-                          <span className="font-medium">{model.split('/')[1]}</span>
+                          <span className="font-medium">{model.split('/').at(-1)}</span>
                           <span className="text-xs text-white/60">{info.description}</span>
                         </div>
                       </SelectItem>
@@ -258,7 +259,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                 </Select>
                 {selectedModel && (
                   <p className="text-sm text-white/60 mt-2">
-                    支持的文件类型：{modelInfo[selectedModel].description}
+                    支持的文件类型：{modelInfo[selectedModel].accept}
                   </p>
                 )}
               </div>
