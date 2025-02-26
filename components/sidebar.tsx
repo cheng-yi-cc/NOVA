@@ -3,12 +3,12 @@
 import { Plus, Layout, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useCallback } from "react"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
-  DialogDescription 
+  DialogDescription
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -60,11 +60,11 @@ export function Sidebar({ onChatToggle }: SidebarProps) {
   return (
     <>
       <div className="fixed left-6 top-1/2 -translate-y-1/2 z-50">
-        <nav className="flex flex-col items-center gap-12 bg-white/10 backdrop-blur-lg rounded-2xl py-8 px-6 shadow-lg">
+        <nav className="flex flex-col items-center gap-6 bg-white/50 backdrop-blur-lg rounded-2xl py-8 px-3 shadow-lg">
           <div className="relative w-full flex justify-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="w-16 h-16 rounded-xl hover:bg-white/10 transition-colors relative group"
               onClick={handleHomeClick}
               title="返回主页"
@@ -80,32 +80,32 @@ export function Sidebar({ onChatToggle }: SidebarProps) {
             </Button>
           </div>
           <div className="space-y-8 w-full flex flex-col items-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="w-11 h-11 rounded-xl hover:bg-white/10 transition-colors group"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-11 h-11 rounded-xl hover:border-cyan-400 hover:bg-white/50 transition-colors group"
               onClick={handleNewChat}
               title="新建聊天"
             >
-              <Plus className="w-6 h-6 text-muted-foreground group-hover:text-white transition-colors" />
+              <Plus className="w-6 h-6 text-muted-foreground group-hover:text-cyan-400 transition-colors" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="w-11 h-11 rounded-xl hover:bg-white/10 transition-colors group"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-11 h-11 rounded-xl hover:border-cyan-400 hover:bg-white/50 transition-colors group"
               onClick={handleHistoryToggle}
               title="历史记录"
             >
-              <Layout className="w-6 h-6 text-muted-foreground group-hover:text-white transition-colors" />
+              <Layout className="w-6 h-6 text-muted-foreground group-hover:text-cyan-400 transition-colors" />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="w-11 h-11 rounded-xl hover:bg-white/10 transition-colors group"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="w-11 h-11 rounded-xl hover:border-cyan-400 hover:bg-white/50 transition-colors group"
               onClick={() => setShowSettings(true)}
               title="设置"
             >
-              <User className="w-6 h-6 text-muted-foreground group-hover:text-white transition-colors" />
+              <User className="w-6 h-6 text-muted-foreground group-hover:text-cyan-400 transition-colors" />
             </Button>
           </div>
         </nav>
@@ -113,14 +113,14 @@ export function Sidebar({ onChatToggle }: SidebarProps) {
 
       {/* 历史记录面板 */}
       {showHistory && (
-        <ChatHistory 
+        <ChatHistory
           onClose={() => setShowHistory(false)}
           onSelectChat={(data) => {
             setShowHistory(false)
             onChatToggle(true)
             // 等待下一个事件循环，确保聊天界面已经挂载
             setTimeout(() => {
-              window.dispatchEvent(new CustomEvent('load-chat-history', { 
+              window.dispatchEvent(new CustomEvent('load-chat-history', {
                 detail: {
                   messages: data.messages,
                   id: data.id
@@ -169,7 +169,7 @@ export function Sidebar({ onChatToggle }: SidebarProps) {
                 </SelectContent>
               </Select>
             </div>
-            <Button 
+            <Button
               type="submit"
               className="mt-2 bg-primary hover:bg-primary/90 transition-colors"
               onClick={handleSaveSettings}

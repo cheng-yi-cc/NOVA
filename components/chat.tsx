@@ -13,7 +13,7 @@ interface Message {
   content: string
   role: 'user' | 'assistant'
   timestamp: Date
-  files?: { 
+  files?: {
     name: string
     type: string
     size: number
@@ -41,7 +41,7 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
     }
     return []
   })
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const initialMessageProcessed = useRef(false)
   const chatId = useRef(nanoid())
@@ -84,8 +84,8 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
   // 智能滚动处理
   const scrollToBottom = useCallback(() => {
     if (userScrolledRef.current) return
-    
-    messagesEndRef.current?.scrollIntoView({ 
+
+    messagesEndRef.current?.scrollIntoView({
       behavior: 'smooth',
       block: 'end'
     })
@@ -139,7 +139,7 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
         // 计算下一个要显示的字符
         const currentLength = targetMessage.streamedContent?.length || 0
         const nextChar = content.charAt(currentLength)
-        
+
         if (nextChar) {
           targetMessage.streamedContent = (targetMessage.streamedContent || '') + nextChar
           targetMessage.content = content
@@ -159,7 +159,7 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
     })
   }, [])
 
-  const handleSendMessage = useCallback(async (content: string, files?: File[]) => {
+  const handleSendMessage = useCallback(async (content: string, files?: File[], cb?: () => void) => {
     try {
       const { apiKey } = useSettingsStore.getState()
       if (!apiKey) {
@@ -169,7 +169,7 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
 
       setIsLoading(true)
       userScrolledRef.current = false
-      
+
       // 添加用户消息
       const userMessageId = nanoid()
       const userMessage: Message = {
@@ -185,7 +185,7 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
           uploadProgress: 0
         }))) : undefined
       }
-      
+
       setMessages(prev => [...prev, userMessage])
 
       // 创建一个临时的AI消息
@@ -198,16 +198,16 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
         isStreaming: true,
         streamedContent: ''
       }
-      
+
       setMessages(prev => [...prev, assistantMessage])
 
       // 流式接收响应
       const response = await sendMessage(
-        content, 
+        content,
         (chunk) => {
           // 使用打字机效果更新内容
           updateStreamedContent(assistantMessageId, chunk)
-        }, 
+        },
         files,
         ({ fileName, progress }) => {
           // 更新文件上传进度
@@ -224,7 +224,7 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
           })
         }
       )
-      
+
       // 保存最终消息
       setMessages(prev => {
         const updated = prev.map(msg => {
@@ -253,12 +253,13 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
     } catch (error) {
       console.error('Failed to send message:', error)
       toast.error(error instanceof Error ? error.message : "发送消息失败，请检查网络连接和API配置")
-      
+
       // 移除失败的助手消息
       setMessages(prev => prev.filter(msg => msg.role !== 'assistant' || !msg.isStreaming))
     } finally {
       setIsLoading(false)
       userScrolledRef.current = false
+      cb?.()
     }
   }, [updateStreamedContent, saveChatHistory])
 
@@ -271,15 +272,15 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
   }, [initialMessage, handleSendMessage])
 
   // 处理加载历史对话
-  const handleLoadHistory = useCallback((event: CustomEvent<{messages: Message[], id: string}>) => {
+  const handleLoadHistory = useCallback((event: CustomEvent<{ messages: Message[], id: string }>) => {
     const { messages: historyMessages, id } = event.detail
-    
+
     // 确保消息的ID是唯一的
     const updatedMessages = historyMessages.map(msg => ({
       ...msg,
       id: msg.id || nanoid() // 如果消息没有ID，生成新的ID
     }))
-    
+
     // 使用原有的对话ID
     chatId.current = id
     setMessages(updatedMessages)
@@ -294,12 +295,12 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
   }, [handleLoadHistory])
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex-1 overflow-hidden relative messages-container">
-        <ChatMessages messages={messages} />
-        <div ref={messagesEndRef} />
-      </div>
-      <div className="p-4 border-t border-white/10">
+    <div className="flex items-center justify-center">
+      <div className="flex flex-col h-screen md:max-w-3xl min-w-[400px] ml-28">
+        <div className="flex-1 overflow-y-auto relative messages-container">
+          <ChatMessages messages={messages} />
+          <div ref={messagesEndRef} />
+        </div>
         <ChatInput onSend={handleSendMessage} disabled={isLoading} />
       </div>
     </div>
