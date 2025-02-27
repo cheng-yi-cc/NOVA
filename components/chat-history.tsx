@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useSettingsStore } from "@/lib/store"
 import { useState } from "react"
+import { isSameDay, isThisWeek } from "@/lib/utils"
+import { HistoryItem } from "@/lib/store"
 
 interface ChatHistoryProps {
   onClose: () => void
@@ -32,6 +34,31 @@ export function ChatHistory({ onClose, onSelectChat, className }: ChatHistoryPro
     return filtered
   }
 
+  // 分类历史记录的函数
+  const categorizeChatHistory = (history: typeof chatHistory): Record<string, HistoryItem[]> => {
+    const today = new Date();
+    const categorizedHistory: Record<string, HistoryItem[]> = {
+      今天: [],
+      本周: [],
+      更早: [],
+    };
+
+    Object.entries(history).forEach(([_, items]) => {
+      items.forEach((chat: HistoryItem) => {
+        const chatDate = new Date(chat.date);
+        if (isSameDay(today, chatDate)) {
+          categorizedHistory.今天.push(chat);
+        } else if (isThisWeek(chatDate)) {
+          categorizedHistory.本周.push(chat);
+        } else {
+          categorizedHistory.更早.push(chat);
+        }
+      });
+    });
+
+    return categorizedHistory;
+  }
+
   const handleChatSelect = (item: any) => {
     onSelectChat({
       messages: item.messages,
@@ -46,7 +73,8 @@ export function ChatHistory({ onClose, onSelectChat, className }: ChatHistoryPro
   }
 
   const filteredHistory = filterHistory(chatHistory)
-  const hasFilteredResults = Object.values(filteredHistory).some(items => items.length > 0)
+  const categorizedHistory = categorizeChatHistory(filteredHistory);
+  const hasFilteredResults = Object.values(categorizedHistory).some(items => items.length > 0)
 
   return (
     <div className={cn(
@@ -85,7 +113,7 @@ export function ChatHistory({ onClose, onSelectChat, className }: ChatHistoryPro
       <div className="flex-1 overflow-y-auto space-y-8 pr-4 -mr-4">
         {hasHistory ? (
           hasFilteredResults ? (
-            Object.entries(filteredHistory).map(([section, items]) =>
+            Object.entries(categorizedHistory).map(([section, items]) =>
               items.length > 0 && (
                 <div key={`section-${section}`}>
                   <h3 className="text-base font-medium mb-4 text-blue-500 dark:text-blue-300/80">{section}</h3>
@@ -98,7 +126,6 @@ export function ChatHistory({ onClose, onSelectChat, className }: ChatHistoryPro
                         day: '2-digit',
                         hour: '2-digit',
                         minute: '2-digit',
-                        second: '2-digit',
                         hour12: false,
                       });
                       return (
