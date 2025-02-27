@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import { FileData } from "@/lib/types"
-import { cn } from "@/lib/utils"
+import { cn, formatFileSize } from "@/lib/utils"
 
 interface ChatInputProps {
   onSend: (content: string, files?: File[], cb?: () => void) => void
@@ -46,6 +46,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     const [replying, setReplying] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+    const [filePreview, setFilePreview] = useState<string[]>([])
 
     const modelInfo: Record<string, ModelInfo> = {
       "Qwen/Qwen2.5-7B-Instruct": {
@@ -149,10 +150,11 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
       const files = Array.from(e.target.files || [])
 
       // 检查文件大小限制
-      const MAX_FILE_SIZE = 2 * 1024 * 1024 // 2 MB
-      const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE)
+      const MAX_FILE_SIZE = 2
+      const MAX_FILE_SIZE_MB = MAX_FILE_SIZE * 1024 * 1024
+      const oversizedFiles = files.filter(file => file.size > MAX_FILE_SIZE_MB)
       if (oversizedFiles.length > 0) {
-        toast.error(`以下文件超过大小限制 (2MB):\n${oversizedFiles.map(f => f.name).join('\n')}`)
+        toast.error(`以下文件超过大小限制 (${MAX_FILE_SIZE}MB):\n${oversizedFiles.map(f => f.name).join('\n')}`)
         return
       }
 
@@ -179,14 +181,16 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
       }
 
       setSelectedFiles(prev => [...prev, ...files])
+      setFilePreview(prev => [...prev, ...files.map(file => {
+        if (file.type.startsWith('image/')) {
+          return URL.createObjectURL(file)
+        }
+        return ''
+      })])
 
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
       }
-    }
-
-    const removeFile = (index: number) => {
-      setSelectedFiles(prev => prev.filter((_, i) => i !== index))
     }
 
     const handleModelChange = (model: string) => {
@@ -202,51 +206,6 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
       }))
       setShowModelSelect(false)
     }
-
-    <div className="relative">
-      <Textarea
-        ref={ref}
-        placeholder={placeholder}
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={handleKeyDown}
-        disabled={disabled}
-        className="min-h-[100px] resize-none pr-24 text-base rounded-xl text-white placeholder:text-white/50"
-      />
-      {/* 右侧功能按钮组 */}
-      <div className="absolute bottom-4 right-4 flex items-center gap-2">
-        {/* 模型选择按钮 */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-xl text-black hover:text-black hover:bg-gray-200"
-          onClick={() => setShowModelSelect(true)}
-          title="选择模型"
-        >
-          <Cube className="size-5" />
-        </Button>
-        {/* 附件按钮 */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="rounded-xl text-black hover:text-black hover:bg-gray-200"
-          // onClick={handleFileSelect}
-          title="上传文件"
-        >
-          <Paperclip className="w-5 h-5" />
-        </Button>
-        {/* 发送按钮 */}
-        <Button
-          size="icon"
-          variant={input.trim() || selectedFiles.length > 0 ? "default" : "ghost"}
-          className={input.trim() || selectedFiles.length > 0 ? "" : "text-cyan-400 hover:text-white hover:bg-white/10"}
-          disabled={(!input.trim() && selectedFiles.length === 0) || disabled}
-          onClick={handleSend}
-        >
-          <Play className="w-5 h-5" />
-        </Button>
-      </div>
-    </div>
 
     return (
       <>
@@ -265,60 +224,40 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                       className="group relative border-none"
                       data-testid={`file-preview-${index}`}
                     >
-                      {selectedFile.type === "image" ? (
+                      {selectedFile.type.startsWith('image/') ? (
                         <div className="size-[68px] border-0 ">
                           <img
-                            src={selectedFile.preview}
+                            src={filePreview[index]}
                             alt={`file-preview-${index}`}
                             className="inline-flex size-full items-center rounded-md text-center font-normal group-hover:opacity-65"
                           />
                         </div>
                       ) : (
                         <div
-                          className="flex h-[68px] w-[236px] flex-nowrap items-start gap-2 rounded-md bg-gray-100 p-3 dark:bg-[#2f2f2f] opacity-100"
+                          className="flex h-[68px] w-[236px] flex-nowrap items-start gap-2 rounded-xl bg-gray-200 p-3 dark:bg-[#2f2f2f] opacity-100"
                         >
                           <div className="mt-1">
-                            <img
-                              width={32}
-                              height={32}
-                              // src={FileSVG}
-                              alt={`file-preview-${index}`}
-                            />
+                            <File size={24} />
                           </div>
 
                           <div
-                            className="flex flex-col items-stretch opacity-25"
+                            className="flex flex-col items-stretch opacity-65"
                           >
                             <span className="max-w-[160px] truncate">
                               {selectedFile.name}
                             </span>
-                            <span className="">{selectedFile.size}</span>
+                            <span className="">{formatFileSize(selectedFile.size)}</span>
                           </div>
                         </div>
                       )}
-                      {/* <div className="absolute left-1/2 top-1/2 size-8 -translate-x-1/2 -translate-y-1/2">
-                        <img
-                          // src={UploadingSVG}
-                          alt="uploading"
-                          className="animate-spin"
-                          // className={`${selectedFile.uploaded ? "hidden" : "animate-spin"}`}
-                          data-testid="uploading-svg"
-                        />
-                      </div> */}
-
-                      {/* <button
+                      <button
                         type="button"
                         onClick={() => handleRemoveFile(index)}
-                        className="absolute right-0 top-0 -translate-y-1/2 translate-x-1/2 cursor-pointer border-none bg-transparent p-1 text-[14px] leading-none opacity-0 group-hover:opacity-65"
+                        className="absolute right-[3px] top-[3px] -translate-y-1/2 translate-x-1/2 cursor-pointer border-none bg-transparent p-1 text-[14px] leading-none opacity-0 text-white group-hover:opacity-65 group-hover:rounded-full group-hover:bg-gray-800"
                         aria-label="remove file"
                       >
-                        <img
-                          width={13}
-                          height={13}
-                          src={RemoveSVG}
-                          alt="remove file"
-                        />
-                      </button> */}
+                        <X size={12} />
+                      </button>
                     </div>
                   ))}
                 </div>

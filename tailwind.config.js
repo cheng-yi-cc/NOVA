@@ -2,15 +2,15 @@
 module.exports = {
   // 暗色模式配置
   darkMode: ["class"],
-  
+
   // 指定要处理的文件
   content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
+    "./pages/**/*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./app/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
   ],
-  
+
   // 主题配置
   theme: {
     // 容器配置
@@ -65,14 +65,15 @@ module.exports = {
         },
       },
       backgroundImage: {
-        "nebula-gradient": "radial-gradient(circle at center, #1B2A4B 0%, #0D0F1A 100%)",
+        "nebula-gradient":
+          "radial-gradient(circle at center, #1B2A4B 0%, #0D0F1A 100%)",
       },
       // 边框圆角配置
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
+      // borderRadius: {
+      //   lg: "var(--radius)",
+      //   md: "calc(var(--radius) - 2px)",
+      //   sm: "calc(var(--radius) - 4px)",
+      // },
       // 关键帧动画配置
       keyframes: {
         "accordion-down": {
@@ -93,5 +94,4 @@ module.exports = {
   },
   // 插件配置
   plugins: [require("tailwindcss-animate")],
-}
-
+};

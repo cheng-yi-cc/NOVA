@@ -174,7 +174,7 @@ export function Chat({ initialMessage, isNewChat = false }: ChatProps) {
       const userMessageId = nanoid()
       const userMessage: Message = {
         id: userMessageId,
-        content: content || "已上传文件",
+        content: content,
         role: 'user',
         timestamp: new Date(),
         files: files ? await Promise.all(files.map(async (file) => ({
