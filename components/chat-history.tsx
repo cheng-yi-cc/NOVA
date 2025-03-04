@@ -1,4 +1,4 @@
-import { X, Search, Pencil, Trash2, History } from "lucide-react"
+import { X, Search, Pencil, Trash2, History, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -6,6 +6,7 @@ import { useSettingsStore } from "@/lib/store"
 import { useState } from "react"
 import { isSameDay, isThisWeek } from "@/lib/utils"
 import { HistoryItem } from "@/lib/store"
+import { nanoid } from "nanoid"
 
 interface ChatHistoryProps {
   onClose: () => void
@@ -18,6 +19,34 @@ export function ChatHistory({ onClose, onSelectChat, className }: ChatHistoryPro
   const [searchQuery, setSearchQuery] = useState("")
 
   const hasHistory = Object.values(chatHistory).some(items => items.length > 0)
+
+  // 处理发送消息
+  const handleSendMessage = () => {
+    if (!searchQuery.trim()) return
+    
+    // 创建一个新的对话
+    const newChat = {
+      messages: [{
+        role: 'user',
+        content: searchQuery,
+        timestamp: new Date(),
+        needResponse: true  // 添加标识，表明需要AI响应
+      }],
+      id: nanoid(),
+      isNewChat: true  // 添加标识，表明这是新对话
+    }
+    
+    onSelectChat(newChat)
+    setSearchQuery("")
+  }
+
+  // 处理按键事件
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
+  }
 
   // 搜索过滤函数
   const filterHistory = (history: typeof chatHistory) => {
@@ -99,14 +128,25 @@ export function ChatHistory({ onClose, onSelectChat, className }: ChatHistoryPro
       </div>
 
       {/* 搜索框 */}
-      <div className="relative mb-8">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-        <Input
-          placeholder="搜索历史会话"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-12 h-12 text-base bg-gray-200/50 dark:bg-white/5 border-white/20 focus:border-blue-400/50 transition-colors rounded-xl"
-        />
+      <div className="relative mb-8 flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input
+            placeholder="搜索历史会话或输入新对话内容"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="pl-12 h-12 text-base bg-gray-200/50 dark:bg-white/5 border-white/20 focus:border-blue-400/50 transition-colors rounded-xl pr-4"
+          />
+        </div>
+        <Button
+          onClick={handleSendMessage}
+          className="h-12 px-6 bg-blue-500 hover:bg-blue-600 text-white rounded-xl flex items-center gap-2"
+          disabled={!searchQuery.trim()}
+        >
+          <Send className="w-5 h-5" />
+          <span>发送</span>
+        </Button>
       </div>
 
       {/* 历史记录列表 */}
